@@ -39,12 +39,13 @@ come with the standard code:
         'mail',
     ],
     "data": [
-        "views/disable_openerp_online.xml",
+        'views/disable_openerp_online.xml',
         'data/ir_ui_menu.xml',
         'data/ir_cron.xml',
     ],
     "qweb": [
         'static/src/xml/base.xml',
+        'static/src/xml/disable_openerp_online.xml',
     ],
     "auto_install": False,
     "installable": True,
