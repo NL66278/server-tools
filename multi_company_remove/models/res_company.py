@@ -39,6 +39,7 @@ COMPANY_TABLES = [
     'account_invoice',
     'account_move',
     'account_voucher',
+    'account_voucher_line',
     'account_analytic_account',
     'account_analytic_journal',
     'account_fiscal_position',
@@ -66,6 +67,10 @@ PRE_TABLE_COMMANDS = {
         'delete from account_voucher where account_id in '
         ' (select id from account_account where company_id = %s)',
     ],
+    'account_voucher_line': [
+        'delete from account_voucher_line where account_id in '
+        ' (select id from account_account where company_id = %s)',
+    ],
 }
 
 DELETE_COMMANDS = {
@@ -85,7 +90,8 @@ DELETE_COMMANDS = {
         ' (select id from account_bank_statement where company_id = %s)',
     'res_partner':
         'delete from res_partner where company_id = %s and id not in'
-        ' (select partner_id from res_company)',
+        ' (select partner_id from res_company) and'
+        ' id not in (select partner_id from res_users)',
 }
 
 
@@ -132,33 +138,38 @@ class ResCompany(models.Model):
             _("Users will be transferred to company %d"),
             remaining_company.id
         )
-        # If user needs to be transferred (present company is to be deleted),
-        # and user has no rights for remaining company yet, add access to
-        # remaning company (another valid choice might have been to delete
-        # the user):
-        statement = """\
-            UPDATE res_users
-            SET company_id = %s
-            WHERE company_id IN %s
+
+        # select the users that belong in in the current company
+        # and they are connected with the remaining_company
+        # move them to the remaining_company.
+        # and change their partner_id.company_id to remaining_company
+        statement_select_users = """
+        SELECT id FROM res_users WHERE company_id=ANY(%s)
         """
-        cr.execute(statement, (remaining_company.id, self.ids))
-        user_model = self.env['res.users']
-        users_to_change = user_model.search([
-            ('company_id', 'in', self.ids),
-        ])
-        if users_to_change:
-            for user in users_to_change:
-                if remaining_company.id not in user.company_ids.ids:
-                    user.write({'company_ids': [(4, remaining_company.id)]})
-            users_to_change.write({'company_id': remaining_company.id})
-        # No partner if it is a user should belong to company to be deleted:
-        users_to_change = user_model.search([])
-        for user in users_to_change:
-            if user.partner_id.company_id and \
-                    user.partner_id.company_id.id in self.ids:
-                user.partner_id.write({
-                    'company_id': remaining_company.id,
-                })
+        cr.execute(statement_select_users, (self.ids, ))   
+        select_results = cr.fetchall()
+        statement_update_users = """
+        UPDATE res_users SET company_id = %s
+        WHERE res_users.id=ANY(%s)
+        """
+        cr.execute(statement_update_users, (remaining_company.id,
+                                            select_results))
+        # insert a connection between the user and the remaining company
+        statement_update_company_ids = """
+            INSERT INTO res_company_users_rel VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+            """
+        for row in select_results:
+            cr.execute(statement_update_company_ids, (remaining_company.id,
+                                                      row[0]))
+        statement_update_partners = """
+        UPDATE res_partner SET company_id = %s WHERE id = ANY(
+        SELECT res_users.partner_id FROM res_partner
+        INNER JOIN res_users ON res_users.partner_id = res_partner.id
+        WHERE res_users.id = ANY(%s))
+        """
+        cr.execute(statement_update_partners, (remaining_company.id,
+                                          select_results))
 
     @api.multi
     def unlink(self):
