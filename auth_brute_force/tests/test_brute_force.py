@@ -66,10 +66,10 @@ class BruteForceCase(HttpCase):
         except AttributeError:
             pass
         # Complex password to avoid conflicts with `password_security`
-        self.good_password = "Admin$%02584"
+        self.good_password = "A_dmin$%02584"
         self.data_demo = {
             "login": "demo",
-            "password": "Demo%&/(908409**",
+            "password": "D_emo%&/(908409**",
         }
         with self.cursor() as cr:
             env = self.env(cr)
