@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright 2015 LasLabs Inc.
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html).
-
+# pylint: disable=missing-docstring,invalid-name,protected-access
 import time
 
 from odoo.tests.common import at_install, post_install, SavepointCase
@@ -17,7 +17,9 @@ class TestResUsers(SavepointCase):
         super(TestResUsers, self).setUp()
         self.main_comp = self.env.ref('base.main_company')
         # Modify users as privileged, but non-root user
-        self.privileged_user = self.env['res.users'].create({
+        self.privileged_user = self.env['res.users'].with_context(
+            no_reset_password=True
+        ).create({
             'name': 'Privileged User',
             'login': 'privileged_user@example.com',
             'company_id': self.main_comp.id,
@@ -100,6 +102,7 @@ class TestResUsers(SavepointCase):
     def test_check_password_crypt(self):
         """ It should raise PassError if previously used """
         rec_id = self._new_record()
+        self.main_comp.history = 30
         with self.assertRaises(PassError):
             rec_id.write({'password': self.password})
 
