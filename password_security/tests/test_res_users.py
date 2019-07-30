@@ -99,6 +99,9 @@ class TestResUsers(SavepointCase):
 
     def test_check_password_crypt(self):
         """ It should raise PassError if previously used """
+        # Only test if history is kept.
+        if not self.main_comp.password_history:
+            return
         rec_id = self._new_record()
         with self.assertRaises(PassError):
             rec_id.write({'password': self.password})
