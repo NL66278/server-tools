@@ -25,7 +25,7 @@ import ConfigParser
 from lxml import etree
 from itertools import chain
 
-from odoo import api, models, fields
+from odoo import _, api, models, fields
 from odoo.tools.config import config as system_base_config
 
 from .system_info import get_server_environment
@@ -102,6 +102,9 @@ def _load_config_from_server_env_files(config_p):
 
     try:
         config_p.read(conf_files)
+        _logger.info(
+            _("Server environment configuration read using these files:\n%s."),
+            conf_files)
     except Exception as e:
         raise Exception('Cannot read config files "%s":  %s' % (conf_files, e))
 

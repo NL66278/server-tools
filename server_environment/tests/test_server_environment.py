@@ -35,6 +35,10 @@ class TestEnv(common.TransactionCase):
         defaults = rec.default_get([])
         self.assertTrue(defaults)
         self.assertIsInstance(defaults, dict)
+        # Rest of test should only be run if passwords should be shown,
+        # because test will always fail if environment is not dev.
+        if not rec.show_passwords:
+            return
         pass_checked = False
         for default in defaults:
             if 'passw' in default:
