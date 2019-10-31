@@ -53,3 +53,10 @@ class IrConfigParameter(models.Model):
                 newvals = vals
             super(IrConfigParameter, rec).write(newvals)
         return True
+
+    @api.model
+    def peek_param(self, key):
+        """Retrieve value of configured option (if any) without side-effect."""
+        if not serv_config.has_option(SECTION, key):
+            return "# Value not set #"
+        return serv_config.get(SECTION, key)
