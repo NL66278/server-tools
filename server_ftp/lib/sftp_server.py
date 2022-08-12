@@ -11,7 +11,13 @@ class SFTPServer(AbstractFTPServer):
         # TODO: make this secure
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-        self.server = pysftp.Connection(host, port, user, password, cnopts=cnopts)
+        self.server = pysftp.Connection(
+            host=host,
+            port=port,
+            username=user,
+            password=password,
+            cnopts=cnopts,
+        )
         return self
 
     def close(self):
